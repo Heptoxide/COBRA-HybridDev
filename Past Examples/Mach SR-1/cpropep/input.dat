@@ -1,0 +1,10 @@
+#run time: 1.978524
+Propellant HTPB/KClO4/Al
++788		83.000000 g
++491		11.000000 g
++212		5.000000 g
++228    1.000000 g
+
+FR
++chamber_pressure 4342.039298 kPa
++supersonic_area_ratio 6.009835
