@@ -18,7 +18,7 @@ d_inj = 0.178; % Injector diameter, in
 Ac = (pi/4)*(d_inj*.0254)^2; % Injector cross sectional area; m3
 Cd = 0.8; % Injector discharge coefficient
 Pamb = 85.9e-3; % Atmospheric pressure, MPa. (4500ft)
-Inj Switch = 1; % Isentropic = 1, Adiabatic = 2
+Inj_Switch = 1; % Isentropic = 1, Adiabatic = 2
 % Time Iteration
 %??????????????????????????????????????????????????????????????????????????
 tstop = 30; % Stop time, s
@@ -60,120 +60,118 @@ State2 = [0, 0];
 i = 0;
 while t < tstop
 
-i = i + 1;
+    i = i + 1;
 
-% Exit the loop when the tank is out of fluid
-%??????????????????????????????????????????????????????????????????????
-if M < 0; break; end
+    % Exit the loop when the tank is out of fluid
+    %??????????????????????????????????????????????????????????????????????
+    if M < 0; break; end
 
-% Initial Tank Fluid Properties
-%======================================================================
-%Note: this guess MUST yeild a quality less than 1 and >0
-guess=[300 300]; %[T,rho]
-%
-%Set up function (need to match pressure and quality)
-pFunc = @(v) [getfield(CO2Props(v(1),v(2)),'P')-P1; ...
-getfield(CO2Props(v(1),v(2)),'X')-X1];
-%{
-%Set up function (need to match pressure and quality)
-pFunc = @(v) [getfield(CO2PropsNIST(v(1),v(2)),'P')?P1 ...
-getfield(CO2PropsNIST(v(1),v(2)),'X')?X1];
-%}
-% Solve for [T,rho] of saturated but pure liquid at P1
-% lsqnonlin tries to find a T and rho that makes pFunc = 0
-v1 = ...
-lsqnonlin(pFunc,guess,0,inf,optimset('Display','off','TolFun',1e-14));
-T1 = v1(1); rho1 = v1(2);
-Props1 = CO2Props(T1,rho1);
-% Props1 = CO2PropsNIST(T1,rho1);
-Pv1 = Props1.P; % Fluid Vapor Pressure, MPa
-rhoL1 = Props1.rho_l; % Fluid liquid density, kg/m3
-h1 = Props1.h; % Fluid specific enthalpy, kJ/kg
-H1 = M*h1; % Fluid total enthalpy, kJ
-s1 = Props1.s; % Fluid entropy, kJ/kg*K
+    % Initial Tank Fluid Properties
+    %======================================================================
+    %Note: this guess MUST yeild a quality less than 1 and >0
+    guess=[300 300]; %[T,rho]
+    %
+    %Set up function (need to match pressure and quality)
+    pFunc = @(v) [getfield(CO2Props(v(1),v(2)),'P')-P1; ...
+                  getfield(CO2Props(v(1),v(2)),'X')-X1];
+    %{
+    %Set up function (need to match pressure and quality)
+    pFunc = @(v) [getfield(CO2PropsNIST(v(1),v(2)),'P')?P1 ...
+    getfield(CO2PropsNIST(v(1),v(2)),'X')?X1];
+    %}
+    % Solve for [T,rho] of saturated but pure liquid at P1
+    % lsqnonlin tries to find a T and rho that makes pFunc = 0
+    v1 = lsqnonlin(pFunc,guess,0,inf,optimset('Display','off','TolFun',1e-14));
+    T1 = v1(1); rho1 = v1(2);
+    Props1 = CO2Props(T1,rho1);
+    % Props1 = CO2PropsNIST(T1,rho1);
+    Pv1 = Props1.P; % Fluid Vapor Pressure, MPa
+    rhoL1 = Props1.rho_l; % Fluid liquid density, kg/m3
+    h1 = Props1.h; % Fluid specific enthalpy, kJ/kg
+    H1 = M*h1; % Fluid total enthalpy, kJ
+    s1 = Props1.s; % Fluid entropy, kJ/kg*K
 
-% Propegate properties across the injector
-%======================================================================
+    % Propegate properties across the injector
+    %======================================================================
 
-%Assume an isentropic (s1=s2) or adiabatic (h1=h2) injector , solve for properties at P2
-if Inj_Switch == 1
-%Set up function to match pressure and entropy
-%
-pFunc = @(v) [getfield(CO2Props(v(1),v(2)),'P')-P2 ...
-getfield(CO2Props(v(1),v(2)),'s')-s1];
-%{
-pFunc = @(v) [getfield(CO2PropsNIST(v(1),v(2)),'P')?P2 ...
-getfield(CO2PropsNIST(v(1),v(2)),'s')?s1];
-%}
-elseif Inj_Switch == 2
-%Set up function to match pressure and enthalpy
-pFunc = @(v) [getfield(CO2Props(v(1),v(2)),'P')-P2 ...
-getfield(CO2Props(v(1),v(2)),'h')-h1];
-end
-% Solve for T2 & rho2 downstream of the injector
-%??????????????????????????????????????????????????????????????????????
-guess=[300 300]; %[T,rho]
-v2 = ...
-lsqnonlin(pFunc,guess,0,inf,optimset('Display','off','TolFun',1e-14));
-T2 = v2(1); rho2 = v2(2);
-% Solve for the remaining properties downstream of the injector
-%??????????????????????????????????????????????????????????????????????
-Props2=CO2Props(T2,rho2); % Downstream fluid properties
-% Props2=CO2PropsNIST(T2,rho2);
-Pv2 = Props2.P; % Downstream fluid vapor pressure
-h2 = Props2.h; % Downstream fluid enthalpy
+    %Assume an isentropic (s1=s2) or adiabatic (h1=h2) injector , solve for properties at P2
+    if Inj_Switch == 1
+    %Set up function to match pressure and entropy
+    %
+        pFunc = @(v) [getfield(CO2Props(v(1),v(2)),'P')-P2 ...
+                      getfield(CO2Props(v(1),v(2)),'s')-s1];
+    %{
+    pFunc = @(v) [getfield(CO2PropsNIST(v(1),v(2)),'P')?P2 ...
+    getfield(CO2PropsNIST(v(1),v(2)),'s')?s1];
+    %}
+    elseif Inj_Switch == 2
+        %Set up function to match pressure and enthalpy
+        pFunc = @(v) [getfield(CO2Props(v(1),v(2)),'P')-P2 ...
+                      getfield(CO2Props(v(1),v(2)),'h')-h1];
+    end
+    % Solve for T2 & rho2 downstream of the injector
+    %??????????????????????????????????????????????????????????????????????
+    guess=[300 300]; %[T,rho]
+    v2 = lsqnonlin(pFunc,guess,0,inf,optimset('Display','off','TolFun',1e-14));
+    T2 = v2(1); rho2 = v2(2);
+    % Solve for the remaining properties downstream of the injector
+    %??????????????????????????????????????????????????????????????????????
+    Props2=CO2Props(T2,rho2); % Downstream fluid properties
+    % Props2=CO2PropsNIST(T2,rho2);
+    Pv2 = Props2.P; % Downstream fluid vapor pressure
+    h2 = Props2.h; % Downstream fluid enthalpy
 
-% Calculate the Mass Flow
-%======================================================================
-% Non?Equalibrium Parameter
-%k = sqrt(abs(P1?P2)/abs(Pv2?P1)); % Whitmores Equation
-k = sqrt((P1-P2)/(Pv1-P2)); % Spencer and Stanfords Equation
-% Weighting Coefficient
+    % Calculate the Mass Flow
+    %======================================================================
+    % Non?Equalibrium Parameter
+    %k = sqrt(abs(P1?P2)/abs(Pv2?P1)); % Whitmores Equation
+    k = sqrt((P1-P2)/(Pv1-P2)); % Spencer and Stanfords Equation
+    % Weighting Coefficient
 
-W = (1/(k+1));
-% Incompressible fluid mass flow rate
-mdot_inc = Ac*sqrt(2*rhoL1*(P1-P2)*1e6);
-% Homogeneous Equilibrium mass flow rate
-mdot_HEM = rho2*Ac*sqrt(2*(h1-h2));
-% Weighted Non?Homogeneous Equilibrium (modified Stanford) mass flow rate
-mdot = Cd*((1-W) * mdot_inc + W * mdot_HEM); % Shannon's Theory
+    W = (1/(k+1));
+    % Incompressible fluid mass flow rate
+    mdot_inc = Ac*sqrt(2*rhoL1*(P1-P2)*1e6);
+    % Homogeneous Equilibrium mass flow rate
+    mdot_HEM = rho2*Ac*sqrt(2*(h1-h2));
+    % Weighted Non?Homogeneous Equilibrium (modified Stanford) mass flow rate
+    mdot = Cd*((1-W) * mdot_inc + W * mdot_HEM); % Shannon's Theory
 
-% Update the upstream fluid properties for the next step
-%======================================================================
-M = M - mdot*dt; % Update tank fluid mass
-Hdot = h1*mdot; % Enthalpy flow rate
-H1 = H1 - Hdot*dt; % Update tank total enthalpy
+    % Update the upstream fluid properties for the next step
+    %======================================================================
+    M = M - mdot*dt; % Update tank fluid mass
+    Hdot = h1*mdot; % Enthalpy flow rate
+    H1 = H1 - Hdot*dt; % Update tank total enthalpy
 
-% Calculate the new tank enthalpy and density
-%?????????????????????????????????????????????????????????????????????
-rho1 = M/V; % Update tank specific density
-h1 = H1/M; % Update tank specific enthalpy
+    % Calculate the new tank enthalpy and density
+    %?????????????????????????????????????????????????????????????????????
+    rho1 = M/V; % Update tank specific density
+    h1 = H1/M; % Update tank specific enthalpy
 
-% Calculate the new tank temperature
-%??????????????????????????????????????????????????????????????????????
-% Create a function for lsqnonlin to solve T(rho,h)
-pFunc = @(T_Unknown) getfield(CO2Props(T_Unknown,rho1),'h')-h1;
-% pFunc = @(T Unknown) getfield(CO2PropsNIST(T Unknown,rho1),'h')?h1;
-% Sinse T Unknown is not pre defined in pFunc, lsqnonlin will find a ...
-% T for rho Known and h Known
-T1 = lsqnonlin(pFunc,300,0,inf,optimset('Display','off','TolFun',1e-14));
-% [T1] = CO2 rho h 2T(rho1,h1,300);
+    % Calculate the new tank temperature
+    %??????????????????????????????????????????????????????????????????????
+    % Create a function for lsqnonlin to solve T(rho,h)
+    pFunc = @(T_Unknown) getfield(CO2Props(T_Unknown,rho1),'h')-h1;
+    % pFunc = @(T Unknown) getfield(CO2PropsNIST(T Unknown,rho1),'h')?h1;
+    % Sinse T Unknown is not pre defined in pFunc, lsqnonlin will find a ...
+    % T for rho Known and h Known
+    T1 = lsqnonlin(pFunc,300,0,inf,optimset('Display','off','TolFun',1e-14));
+%     [T1] = CO2_rho_h_2T(rho1,h1,300);
 
-% Calulate the new tank pressure and quality
-%??????????????????????????????????????????????????????????????????????
-Props1 = CO2Props(T1,rho1);
-% Props1 = CO2PropsNIST(T1,rho1);
-P1 = Props1.P;
-X1 = Props1.X;
+    % Calulate the new tank pressure and quality
+    %??????????????????????????????????????????????????????????????????????
+    Props1 = CO2Props(T1,rho1);
+    % Props1 = CO2PropsNIST(T1,rho1);
+    P1 = Props1.P;
+    X1 = Props1.X;
 
-st1 = Props1.state;
+    st1 = Props1.state;
 
-% Update the state
-%??????????????????????????????????????????????????????????????????????
-t = t + dt;
+    % Update the state
+    %??????????????????????????????????????????????????????????????????????
+    t = t + dt;
 
-State = [State; t, M, rho1, T1, P1, X1, h1, H1, mdot, Pamb, st1];
-State2 = [State2; mdot inc, mdot HEM];
+    State = [State; t, M, rho1, T1, P1, X1, h1, H1, mdot, Pamb, st1];
+    State2 = [State2; mdot_inc, mdot_HEM];
 end
 %
 % Open cold flow data for comparison
@@ -244,7 +242,7 @@ h1 = State(:,7); % Column 7: Tank specific enthalpy, h1 (kJ/kg)
 H1 = State(:,8); % Column 8: Tank total enthalpy, H1 (J) ??? Units
 mdot = State(:,9); % Column 9: Tank mass flow rate, mdot (kg/s)
 P2 = State(:,10); % Column 10: Injector outlet pressure, P2 (Pa)
-st = State(:,11); % Column 11: Fluid state, ?1=? Input, 0=Liq, 1=Sat, 2=Gas
+st = State(:,11); % Column 11: Fluid state, -1=? Input, 0=Liq, 1=Sat, 2=Gas
 
 mdot_inc = State2(:,1); % Mdot Incompressible
 mdot_HEM = State2(:,2); % Mdot HEM
@@ -260,21 +258,21 @@ plot(t,M); hold on; grid on;
 %plot(CF t,CF DeltaWeight,'g');
 %title('Tank Mass');
 xlim([0 tstop]);
-xlabel('Time, s'); ylabel('Tank Fluid Mass, kg');
+xlabel('Time (s)'); ylabel('Tank Fluid Mass (kg)');
 %legend('Model Predicted','Whitmore','Cold Flow');
-legend('Model Predicted','Cold Flow');
+% legend('Model Predicted','Cold Flow');
 %  saveas(2,'Tank Mass.png')
 
 % Column 3 ? Tank fluid specific density
 %??????????????????????????????????????????????????????????????????????????
 figure(3);
 plot(t,rho1); hold on; grid on;
-plot(W_t,W_rho1,'??g');
+% plot(W_t,W_rho1,'??g');
 %  plot(CF_t,CF Weight/V,'r');
 title('rho1');
 
-xlabel('Time, s'); ylabel('Density, kg/m3');
-legend('Model Predicted','Whitmore','Cold Flow');
+xlabel('Time, s'); ylabel('Density (kg/m^3)');
+% legend('Model Predicted','Whitmore','Cold Flow');
 %  saveas(3,'Tank Density.png')
 
 % Column 4 ? Tank temperature
@@ -285,9 +283,9 @@ plot(t,T1); hold on; grid on;
 %  plot(CF_t,CF T Tank,'??r');
 %title('Temperature');
 xlim([0 tstop]);
-xlabel('Time, s'); ylabel('Temperature, K');
+xlabel('Time (s)'); ylabel('Temperature (K)');
 %legend('Model Predicted','Whitmore','Cold Flow');
-legend('Model Predicted','Cold Flow');
+% legend('Model Predicted','Cold Flow');
 %  saveas(4,'Tank Temperature.png')
 
 % Column 5 ? Tank pressure
@@ -298,8 +296,8 @@ plot(t,P1); hold on; grid on;
 %  plot(CF t,CF PTank/1e6,'??r');
 %title('P1');
 xlim([0 tstop]);
-xlabel('Time, s'); ylabel('Pressure, MPa');
-legend('Model Predicted','Cold Flow');
+xlabel('Time (s)'); ylabel('Pressure (MPa)');
+% legend('Model Predicted','Cold Flow');
 %legend('Model Predicted','Whitmore','Cold Flow');
 %  saveas(5,'Tank Pressure.png')
 
@@ -307,12 +305,12 @@ legend('Model Predicted','Cold Flow');
 %??????????????????????????????????????????????????????????????????????????
 figure (6)
 plot(t,X1); hold on; grid on;
-plot(W_t,W_X1,'??g');
+% plot(W_t,W_X1,'??g');
 
 ylim([0 1]);
 title('X1');
-xlabel('Time, s'); ylabel('Quality');
-legend('Model Predicted','Whitmore');
+xlabel('Time (s)'); ylabel('Quality');
+% legend('Model Predicted','Whitmore');
 %  saveas(6,'Tank Quality.png')
 
 % Coumn 7 ? Tank specific enthalpy
@@ -320,7 +318,7 @@ legend('Model Predicted','Whitmore');
 figure (7)
 plot(t,h1); hold on; grid on;
 title('h1');
-xlabel('Time, s'); ylabel('Specific Enthalpy, kJ/kg?K');
+xlabel('Time (s)'); ylabel('Specific Enthalpy (kJ/kg-K)');
 legend('Model Predicted');
 %  saveas(7,'Tank Specific Enthalpy.png')
 
@@ -328,9 +326,9 @@ legend('Model Predicted');
 %??????????????????????????????????????????????????????????????????????????
 figure (8)
 plot(t,H1); hold on; grid on;
-plot(W_t,W_H1,'??g');
-title('H1'); xlabel('time, s'); ylabel('Enthalpy');
-legend('Model Predicted','Whitmore');
+% plot(W_t,W_H1,'??g');
+title('H1'); xlabel('time (s)'); ylabel('Enthalpy');
+% legend('Model Predicted','Whitmore');
 %  saveas(8,'Tank Total Enthalpy.png')
 
 % Column 9 ? Mass flow rate
@@ -339,9 +337,9 @@ figure(9);
 plot(t,mdot,'b'); hold on; grid on;
 %  plot(CF t,CF Mdot,'??r')
 %  plot(CF t,CF Mdot H,'?.b')
-xlabel('Time, s'); ylabel('Mass Flow Rate, kg/s');
+xlabel('Time (s)'); ylabel('Mass Flow Rate (kg/s)');
 xlim([0 tstop]); %ylim([0 3]);
-legend('Model Predicted','Venturi?Curve Fit Density','Venturi?Helmholtz Density');
+% legend('Model Predicted','Venturi?Curve Fit Density','Venturi?Helmholtz Density');
 %  saveas(9,'Tank Mass Flow Rate Venturi.png')
 
 
@@ -351,10 +349,10 @@ plot(t,mdot,'b'); hold on; grid on;
 %  plot(CF t,CF Mdot,'??r')
 %  plot(CF t,?CF Mdot wave,'?.b')
 plot(t,mdot_inc,':b');
-plot(t,mdot_HEM,'??bo');
-xlabel('Time, s'); ylabel('Mass Flow Rate, kg/s');
+plot(t,mdot_HEM,'--bo');
+xlabel('Time (s)'); ylabel('Mass Flow Rate (kg/s)');
 xlim([0 tstop]); ylim([0 1.6]);
-legend('Model Predicted','Cold Flow?Venturi','Cold Flow?Differentiated Load','Incompressible Model','HEM Model');
+% legend('Model Predicted','Cold Flow?Venturi','Cold Flow?Differentiated Load','Incompressible Model','HEM Model');
 %  saveas(90,'Tank Mass Flow Rate.png')
 
 %  figure(900);
@@ -370,7 +368,7 @@ legend('Model Predicted','Cold Flow?Venturi','Cold Flow?Differentiated Load','In
 figure(11);
 plot(t,st); grid on;
 title('Fluid State');
-xlabel('Time, s'); ylabel('Fluid State');
+xlabel('Time (s)'); ylabel('Fluid State');
 ylim([2 3]);
 legend('Model Predicted');
 %  saveas(11,'Tank Fluid State.png')
