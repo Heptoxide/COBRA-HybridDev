@@ -72,7 +72,7 @@ while t < tstop
     guess=[300 300]; %[T,rho]
     %
     %Set up function (need to match pressure and quality)
-    pFunc = @(v) [getfield(CO2Props(v(1),v(2)),'P')-P1; ...
+    pFunc = @(v) [getfield(CO2Props(v(1),v(2)),'P')-P1 ...
                   getfield(CO2Props(v(1),v(2)),'X')-X1];
     %{
     %Set up function (need to match pressure and quality)
