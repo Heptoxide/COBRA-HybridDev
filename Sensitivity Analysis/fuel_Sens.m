@@ -25,7 +25,7 @@
 %
 
 %% General motor properties
-burnTime = 10; % s
+burnTime = 5; % s, originally 10
 
 
 %% Initialize fuel properties
