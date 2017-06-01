@@ -1,0 +1,11 @@
+% $17 1000 psi pressure transducer data
+% Test pressure +0.4, -0.5 (psi), Voltage (V)
+11  0.533
+20  0.573
+29  0.604
+41  0.649
+50  0.690
+60  0.728
+40  0.649
+22  0.576
+0   0.492
